@@ -34,7 +34,7 @@ def setup_modbus_server():
         ir=ModbusSequentialDataBlock(0, [0] * 10)
     )
     context = ModbusServerContext(slaves=store, single=True)
-    StartTcpServer(context, framer=ModbusSocketFramer, address=("192.168.0.110", 5020))
+    StartTcpServer(context, framer=ModbusSocketFramer, address=("192.168.0.110", 502))
 
 if __name__ == "__main__":
     # 启动 Modbus 服务器线程
