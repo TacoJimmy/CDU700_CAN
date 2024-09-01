@@ -34,7 +34,8 @@ def read_can_data(bus, store):
                     store.setValues(3, MODBUS_REGISTER_BASE + device_id * 2, [voltage_int])  # 电压寄存器地址
                     print(f"Device {device_id} Voltage: {voltage} V")
                 else:
-                    store.setValues(3, MODBUS_REGISTER_BASE + device_id * 2, 0)  # 电压寄存器地址
+                    voltage_int = int(0)
+                    store.setValues(3, MODBUS_REGISTER_BASE + device_id * 2, [voltage_int])  # 电压寄存器地址
                     print(f"Device {device_id} Voltage: {0} V")
 
                 # 发送电流消息
@@ -47,7 +48,8 @@ def read_can_data(bus, store):
                     store.setValues(3, MODBUS_REGISTER_BASE + device_id * 2 + 1, [current_int])  # 电流寄存器地址
                     print(f"Device {device_id} Current: {current} A")
                 else:
-                    store.setValues(3, MODBUS_REGISTER_BASE + device_id * 2 + 1, 0)  # 电流寄存器地址
+                    current_int = int(0)
+                    store.setValues(3, MODBUS_REGISTER_BASE + device_id * 2 + 1, [current_int])  # 电流寄存器地址
                     print(f"Device {device_id} Current: {0} A")
                     
             except can.CanError as e:
