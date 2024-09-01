@@ -28,7 +28,7 @@ def read_can_data(bus, store):
                 voltage_msg = can.Message(arbitration_id=can_id, data=[0x60, 0x00], is_extended_id=True)
                 bus.send(voltage_msg)
                 voltage_response = bus.recv(timeout=1.0)
-                if voltage_response and voltage_response.arbitration_id == can_id:
+                if voltage_response and voltage_response.arbitration_id == (can_id-100):
                     voltage = (voltage_response.data[3] << 8 | voltage_response.data[2]) / 10.0
                     store.setValues(3, MODBUS_REGISTER_BASE + device_id * 2, [int(voltage * 10)])  # 电压寄存器地址
                     print(f"Device {device_id} Voltage: {voltage} V")
@@ -37,7 +37,7 @@ def read_can_data(bus, store):
                 current_msg = can.Message(arbitration_id=can_id, data=[0x61, 0x00], is_extended_id=True)
                 bus.send(current_msg)
                 current_response = bus.recv(timeout=1.0)
-                if current_response and current_response.arbitration_id == can_id:
+                if current_response and current_response.arbitration_id == (can_id-100):
                     current = (current_response.data[3] << 8 | current_response.data[2]) / 10.0
                     store.setValues(3, MODBUS_REGISTER_BASE + device_id * 2 + 1, [int(current * 10)])  # 电流寄存器地址
                     print(f"Device {device_id} Current: {current} A")
