@@ -1,59 +1,52 @@
 import can
 import time
-from pymodbus.server import ServerStart  # 新的导入路径
+from pymodbus.server.sync import StartTcpServer
 from pymodbus.datastore import ModbusSlaveContext, ModbusServerContext
 from pymodbus.datastore import ModbusSequentialDataBlock
-from pymodbus.transaction import ModbusSocketFramer
 import threading
 
-# CANBus 配置和数据读取
-def read_can_data():
-    bus = can.interface.Bus(channel='can0', bustype='socketcan', bitrate=250000)
+def read_can_voltage(bus, store):
     while True:
         try:
-            message = bus.recv(timeout=1.0)
-            if message and message.arbitration_id == 0xC0000:
-                voltage = parse_data(message.data, 0)
-                current = parse_data(message.data, 1)
-                # 更新 Modbus 数据
-                store.set_values(3, 0, [voltage, current])
-                print(f"Updated Modbus data: Voltage = {voltage}, Current = {current}")
-            time.sleep(5)
-        except Exception as e:
-            print(f"Error reading CAN data: {e}")
+            # 发送读取电压的CAN消息
+            msg = can.Message(arbitration_id=0xC0100, data=[0x60, 0x00], is_extended_id=True)
+            bus.send(msg)
+            
+            # 接收响应
+            response = bus.recv(timeout=1.0)
+            if response and response.arbitration_id == 0xC0000:
+                voltage = parse_voltage(response.data)
+                print(f"Voltage read from CANBus: {voltage} V")
+                
+                # 将电压值写入Modbus寄存器地址1（Modbus寄存器是从1开始编号）
+                store.set_values(3, 1, [voltage])
+            else:
+                print("No valid CANBus response received.")
+        except can.CanError as e:
+            print(f"CANBus error: {e}")
+        time.sleep(5)  # 每5秒读取一次电压
 
-def parse_data(data, index):
-    value_raw = data[index * 2 + 1] << 8 | data[index * 2]
-    return value_raw / 10.0
+def parse_voltage(data):
+    # 解析电压值，假设电压数据在data数组的前两字节
+    voltage_raw = data[1] << 8 | data[0]
+    voltage = voltage_raw / 100.0  # 假设电压单位是0.01V
+    return voltage
 
-# Modbus TCP 服务器配置
-def setup_modbus_server(eth0_ip):
-    global store
+def run_modbus_server():
+    # 创建一个Modbus数据存储块，初始值设为10
     store = ModbusSlaveContext(
-        hr=ModbusSequentialDataBlock(0, [0] * 10),
-        ir=ModbusSequentialDataBlock(0, [0] * 10)
+        hr=ModbusSequentialDataBlock(0, [10]*100)  # 100个寄存器，初始值为10
     )
+
     context = ModbusServerContext(slaves=store, single=True)
-    print(f"Starting Modbus server on {eth0_ip}...")
-    server = ServerStart(context, framer=ModbusSocketFramer, address=(eth0_ip, 502))
-    server.start()
-    print("Modbus server started.")
+
+    # 启动CANBus监听线程
+    can_bus = can.interface.Bus(channel='can0', bustype='socketcan', bitrate=250000)
+    can_thread = threading.Thread(target=read_can_voltage, args=(can_bus, store), daemon=True)
+    can_thread.start()
+
+    # 启动Modbus TCP服务器
+    StartTcpServer(context, address=("0.0.0.0", 502))
 
 if __name__ == "__main__":
-    # 替换为你的 eth0 接口的 IP 地址
-    eth0_ip = "192.168.0.123"
-    
-    # 启动 Modbus 服务器线程
-    modbus_thread = threading.Thread(target=setup_modbus_server, args=(eth0_ip,), daemon=True)
-    modbus_thread.start()
-    
-    # 启动 CAN 数据读取线程
-    can_thread = threading.Thread(target=read_can_data, daemon=True)
-    can_thread.start()
-    
-    # 保持主线程运行
-    try:
-        while True:
-            time.sleep(1)
-    except KeyboardInterrupt:
-        print("Server stopped.")
+    run_modbus_server()
