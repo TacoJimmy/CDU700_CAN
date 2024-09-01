@@ -29,6 +29,8 @@ def calculate_power():
     
     if voltage is not None and current is not None:
         power = voltage * current
+        print(f"voltage: {voltage} W")
+        print(f"current: {current} W")
         print(f"Power: {power} W")
     else:
         print("Failed to read voltage or current.")
