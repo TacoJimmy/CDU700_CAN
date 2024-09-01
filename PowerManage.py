@@ -6,7 +6,7 @@ from pymodbus.datastore import ModbusSequentialDataBlock
 from pymodbus.transaction import ModbusSocketFramer
 import threading
 
-# CANBus 配置
+# CANBus 配置和数据读取
 def read_can_data():
     bus = can.interface.Bus(channel='can0', bustype='socketcan', bitrate=250000)
     while True:
