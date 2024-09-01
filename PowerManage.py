@@ -19,7 +19,7 @@ def read_can_voltage(bus, store):
                 print(f"Voltage read from CANBus: {voltage} V")
                 
                 # 将电压值写入Modbus寄存器地址1（Modbus寄存器是从1开始编号）
-                store.set_values(3, 1, [voltage])
+                store.setValues(3, 1, [voltage])
             else:
                 print("No valid CANBus response received.")
         except can.CanError as e:
@@ -28,8 +28,8 @@ def read_can_voltage(bus, store):
 
 def parse_voltage(data):
     # 解析电压值，假设电压数据在data数组的前两字节
-    voltage_raw = data[1] << 8 | data[0]
-    voltage = voltage_raw / 100.0  # 假设电压单位是0.01V
+    voltage_raw = data[3] << 8 | data[2]
+    voltage = voltage_raw / 10.0 
     return voltage
 
 def run_modbus_server():
