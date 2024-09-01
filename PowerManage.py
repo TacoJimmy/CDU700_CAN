@@ -32,11 +32,11 @@ def read_can_data(bus, store):
                     voltage = (voltage_response.data[3] << 8 | voltage_response.data[2]) / 10.0
                     voltage_int = int(voltage * 10)
                     store.setValues(3, MODBUS_REGISTER_BASE + device_id * 2, [voltage_int])  # 电压寄存器地址
-                    print(f"Device {device_id} Voltage: {voltage} V")
+                    #print(f"Device {device_id} Voltage: {voltage} V")
                 else:
                     voltage_int = int(0)
                     store.setValues(3, MODBUS_REGISTER_BASE + device_id * 2, [voltage_int])  # 电压寄存器地址
-                    print(f"Device {device_id} Voltage: {0} V")
+                    #print(f"Device {device_id} Voltage: {0} V")
 
                 # 发送电流消息
                 current_msg = can.Message(arbitration_id=can_id, data=[0x61, 0x00], is_extended_id=True)
@@ -46,14 +46,16 @@ def read_can_data(bus, store):
                     current = (current_response.data[3] << 8 | current_response.data[2]) / 10.0
                     current_int = int(current * 10)
                     store.setValues(3, MODBUS_REGISTER_BASE + device_id * 2 + 1, [current_int])  # 电流寄存器地址
-                    print(f"Device {device_id} Current: {current} A")
+                    #print(f"Device {device_id} Current: {current} A")
                 else:
                     current_int = int(0)
                     store.setValues(3, MODBUS_REGISTER_BASE + device_id * 2 + 1, [current_int])  # 电流寄存器地址
-                    print(f"Device {device_id} Current: {0} A")
+                    #print(f"Device {device_id} Current: {0} A")
                     
             except can.CanError as e:
-                print(f"CANBus error: {e}")
+                #print(f"CANBus error: {e}")
+                
+                pass
         
         time.sleep(5)  # 每5秒读取一次数据
 
