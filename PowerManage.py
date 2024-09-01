@@ -17,7 +17,7 @@ DEVICE_CAN_IDS = {
     3: 0xC0103
 }
 
-MODBUS_REGISTER_BASE = 1
+MODBUS_REGISTER_BASE = 0
 NUM_DEVICES = len(DEVICE_CAN_IDS)
 
 def read_can_data(bus, store):
@@ -52,7 +52,7 @@ def read_can_data(bus, store):
 def run_modbus_server():
     initial_values = [10] * (NUM_DEVICES * 2)  # 每个设备2个寄存器（电压和电流）
     store = ModbusSlaveContext(
-        hr=ModbusSequentialDataBlock(0, initial_values)  # 设定初始值
+        hr=ModbusSequentialDataBlock(0, [10]*10)  # 设定初始值
     )
     context = ModbusServerContext(slaves=store, single=True)
     can_bus = can.interface.Bus(channel=CAN_CHANNEL, bustype='socketcan', bitrate=CAN_BITRATE)
