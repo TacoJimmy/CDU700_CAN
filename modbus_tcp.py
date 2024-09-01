@@ -5,7 +5,7 @@ from pymodbus.datastore import ModbusSequentialDataBlock
 def run_modbus_server():
     # 创建一个Modbus数据存储块
     store = ModbusSlaveContext(
-        hr=ModbusSequentialDataBlock(0, [0]*100)  # 100个寄存器，初始值为0
+        hr=ModbusSequentialDataBlock(0, [10]*100)  # 100个寄存器，初始值为0
     )
 
     # 创建服务器上下文
