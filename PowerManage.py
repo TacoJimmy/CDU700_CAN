@@ -1,60 +1,53 @@
 import can
 import time
-from pymodbus.server.sync import StartTcpServer
+from pymodbus.server.async import StartTcpServer
 from pymodbus.datastore import ModbusSlaveContext, ModbusServerContext
-from pymodbus.datastore.store import ModbusSequentialDataBlock
-from threading import Thread
+from pymodbus.datastore import ModbusSequentialDataBlock
+from pymodbus.transaction import ModbusSocketFramer
+import threading
 
-
-store = ModbusSlaveContext(
-    hr=ModbusSequentialDataBlock(0, [0] * 100))  
-context = ModbusServerContext(slaves=store, single=True)
-
-def update_modbus_registers(voltage, current):
-    context[0x00].setValues(3, 0, [int(voltage * 10)]) 
-    context[0x00].setValues(3, 1, [int(current * 10)])  
-
+# CANBus 配置
 def read_can_data():
     bus = can.interface.Bus(channel='can0', bustype='socketcan', bitrate=250000)
     while True:
+        try:
+            message = bus.recv(timeout=1.0)
+            if message and message.arbitration_id == 0xC0000:
+                voltage = parse_data(message.data, 0)
+                current = parse_data(message.data, 1)
+                # 更新 Modbus 数据
+                store.set_values(3, 0, [voltage, current])
+            time.sleep(5)
+        except Exception as e:
+            print(f"Error reading CAN data: {e}")
 
-        voltage = send_can_message(bus, [0x60, 0x00])
+def parse_data(data, index):
+    # 解析数据，假设数据格式为 [高字节, 低字节]
+    value_raw = data[index * 2 + 1] << 8 | data[index * 2]
+    return value_raw / 10.0
 
-        current = send_can_message(bus, [0x61, 0x00])
-        
-        if voltage is not None and current is not None:
-            update_modbus_registers(voltage, current)
-            print(f"Updated Modbus registers with Voltage: {voltage} V, Current: {current} A")
-        
-        time.sleep(5)  # 每5秒读取一次数据
-
-def send_can_message(bus, command):
-    msg = can.Message(arbitration_id=0xC0100, data=command, is_extended_id=True)
-    
-    try:
-        bus.send(msg)
-        response = bus.recv(timeout=1.0)
-        if response and response.arbitration_id == 0xC0000:
-            return parse_data(response.data)
-        else:
-            print("No valid response received.")
-            return None
-
-    except can.CanError as e:
-        print(f"Error sending message: {e}")
-        return None
-
-def parse_data(data):
-
-    value_raw = data[3] << 8 | data[2]
-    value = value_raw / 10.0 
-    return value
+# Modbus TCP 服务器配置
+def setup_modbus_server():
+    global store
+    store = ModbusSlaveContext(
+        hr=ModbusSequentialDataBlock(0, [0] * 10),
+        ir=ModbusSequentialDataBlock(0, [0] * 10)
+    )
+    context = ModbusServerContext(slaves=store, single=True)
+    StartTcpServer(context, framer=ModbusSocketFramer, address=("0.0.0.0", 5020))
 
 if __name__ == "__main__":
-
-    can_thread = Thread(target=read_can_data)
-    can_thread.daemon = True
+    # 启动 Modbus 服务器线程
+    modbus_thread = threading.Thread(target=setup_modbus_server, daemon=True)
+    modbus_thread.start()
+    
+    # 启动 CAN 数据读取线程
+    can_thread = threading.Thread(target=read_can_data, daemon=True)
     can_thread.start()
-
-
-    StartTcpServer(context, address=("192.168.0.110", 502))
+    
+    # 保持主线程运行
+    try:
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        print("Server stopped.")
