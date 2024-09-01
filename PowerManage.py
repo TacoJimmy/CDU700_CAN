@@ -6,9 +6,9 @@ def send_can_message(command):
     
     try:
         bus.send(msg)
-        response = bus.recv(timeout=1.0)  # 设置超时时间为1秒
+        response = bus.recv(timeout=1.0)  
         if response and response.arbitration_id == 0xC0000:
-            print(f"Received message: {response}")
+            
             return parse_data(response.data)
         else:
             print("No valid response received.")
