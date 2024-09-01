@@ -30,7 +30,8 @@ def read_can_data(bus, store):
                 voltage_response = bus.recv(timeout=1.0)
                 if voltage_response and voltage_response.arbitration_id == (can_id-0x100):
                     voltage = (voltage_response.data[3] << 8 | voltage_response.data[2]) / 10.0
-                    store.setValues(3, MODBUS_REGISTER_BASE + device_id * 2, [int(voltage * 10)])  # 电压寄存器地址
+                    voltage_int = int(voltage * 10)
+                    store.setValues(3, MODBUS_REGISTER_BASE + device_id * 2, [voltage_int])  # 电压寄存器地址
                     print(f"Device {device_id} Voltage: {voltage} V")
 
                 # 发送电流消息
@@ -39,7 +40,8 @@ def read_can_data(bus, store):
                 current_response = bus.recv(timeout=1.0)
                 if current_response and current_response.arbitration_id == (can_id-0x100):
                     current = (current_response.data[3] << 8 | current_response.data[2]) / 10.0
-                    store.setValues(3, MODBUS_REGISTER_BASE + device_id * 2 + 1, [int(current * 10)])  # 电流寄存器地址
+                    current_int = int(current * 10)
+                    store.setValues(3, MODBUS_REGISTER_BASE + device_id * 2 + 1, [current_int])  # 电流寄存器地址
                     print(f"Device {device_id} Current: {current} A")
                     
             except can.CanError as e:
@@ -48,14 +50,11 @@ def read_can_data(bus, store):
         time.sleep(5)  # 每5秒读取一次数据
 
 def run_modbus_server():
-    # 创建 Modbus 数据存储块，初始值设为10
     initial_values = [10] * (NUM_DEVICES * 2)  # 每个设备2个寄存器（电压和电流）
     store = ModbusSlaveContext(
         hr=ModbusSequentialDataBlock(0, initial_values)  # 设定初始值
     )
     context = ModbusServerContext(slaves=store, single=True)
-
-    # 启动 CANBus 监听线程
     can_bus = can.interface.Bus(channel=CAN_CHANNEL, bustype='socketcan', bitrate=CAN_BITRATE)
     can_thread = threading.Thread(target=read_can_data, args=(can_bus, store), daemon=True)
     can_thread.start()
