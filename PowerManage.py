@@ -1,6 +1,6 @@
 import can
 import time
-from pymodbus.server.async import StartTcpServer
+from pymodbus.server import StartTcpServer
 from pymodbus.datastore import ModbusSlaveContext, ModbusServerContext
 from pymodbus.datastore import ModbusSequentialDataBlock
 from pymodbus.transaction import ModbusSocketFramer
