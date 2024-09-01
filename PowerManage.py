@@ -1,6 +1,6 @@
 import can
 import time
-from pymodbus.server.sync import StartTcpServer
+from pymodbus.server import ServerStart  # 新的导入路径
 from pymodbus.datastore import ModbusSlaveContext, ModbusServerContext
 from pymodbus.datastore import ModbusSequentialDataBlock
 from pymodbus.transaction import ModbusSocketFramer
@@ -35,7 +35,8 @@ def setup_modbus_server(eth0_ip):
     )
     context = ModbusServerContext(slaves=store, single=True)
     print(f"Starting Modbus server on {eth0_ip}...")
-    StartTcpServer(context, framer=ModbusSocketFramer, address=(eth0_ip, 502))
+    server = ServerStart(context, framer=ModbusSocketFramer, address=(eth0_ip, 502))
+    server.start()
     print("Modbus server started.")
 
 if __name__ == "__main__":
